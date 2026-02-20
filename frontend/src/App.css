@@ -1,0 +1,102 @@
+.app-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.version-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.version-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.region-badge {
+  background: #007bff;
+  color: white;
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.version-number {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.build-id, .hash {
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 0.2rem;
+}
+
+.error { color: red; border-color: red; }
+
+/* Global TOC Field Styling */
+.global-toc-container {
+  margin: 1.5rem auto;
+  max-width: 600px;
+}
+
+.global-toc-input {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.2rem;
+  font-family: monospace;
+  font-weight: bold;
+  color: #28a745;
+  background-color: #f8f9fa;
+  border: 2px solid #343a40;
+  border-radius: 8px;
+  text-align: center;
+  outline: none;
+  cursor: default; /* Indicates it cannot be typed in */
+}
+
+/* Card Selection Styling */
+.version-card {
+  cursor: pointer;
+  border: 2px solid #ddd;
+  transition: all 0.2s ease-in-out;
+}
+
+.version-card:hover {
+  border-color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* When a card is toggled ON */
+.version-card.selected {
+  border-color: #28a745;
+  background-color: #eafaf1;
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.4);
+}
+
+.version-card.selected .region-badge {
+  background: #28a745;
+}
