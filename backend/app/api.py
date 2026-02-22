@@ -10,19 +10,21 @@ logger = logging.getLogger(__name__)
 version_cache = {}
 CACHE_TTL_SECONDS = 60 * 15
 
-# The definitive list of all known WoW CDN branches
+products_cache = {"timestamp": 0, "data": []}
+PRODUCTS_CACHE_TIL_SECONDS = 60 * 60
+
 KNOWN_WOW_PRODUCTS = [
-    "wow",  # Retail
-    "wowt",  # Retail PTR
-    "wowxptr",  # Retail PTR 2
-    "wow_beta",  # Retail Beta
-    "wow_classic",  # Progression Classic
-    "wow_classic_ptr",  # Progression Classic PTR
-    "wow_classic_beta",  # Progression Classic Beta
-    "wow_classic_era",  # Classic Era / Hardcore / SoD
-    "wow_classic_era_ptr",  # Classic Era PTR
-    "wowdev",  # Internal Dev
-    "wowlivetest",  # Internal Live Test
+    "wow",
+    "wowt",
+    "wowxptr",
+    "wow_beta",
+    "wow_classic",
+    "wow_classic_ptr",
+    "wow_classic_beta",
+    "wow_classic_era",
+    "wow_classic_era_ptr",
+    "wowdev",
+    "wowlivetest",
 ]
 
 
@@ -44,6 +46,14 @@ async def get_versions(product: str):
 
 @router.get("/products")
 async def get_wow_products():
+    if (
+        time.time() - products_cache["timestamp"] < PRODUCTS_CACHE_TIL_SECONDS
+        and products_cache["data"]
+    ):
+        logger.info("Serving /products from cache")
+        return {"products": products_cache["data"]}
+
+    logger.info("Cache miss for /products, fetching from CDN...")
     active_products = []
 
     async def check_product(prod_name):
@@ -55,8 +65,10 @@ async def get_wow_products():
     tasks = [check_product(prod) for prod in KNOWN_WOW_PRODUCTS]
     await asyncio.gather(*tasks)
 
-    # Sort, retail first, then alphabetical
     active_products.sort(key=lambda x: (x != "wow", x))
+
+    products_cache["timestamp"] = time.time()
+    products_cache["data"] = active_products
 
     return {"products": active_products}
 

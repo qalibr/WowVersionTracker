@@ -4,7 +4,6 @@ from app.api import router as api_router
 
 app = FastAPI(title="WoW Version Tracker")
 
-# CORS config, fronted speaks with backend via 5173
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -13,7 +12,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# API Routes
 app.include_router(api_router, prefix="/api/v1")
 
 
