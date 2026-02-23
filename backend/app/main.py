@@ -1,8 +1,17 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import router as api_router
+from app.database import create_db_and_tables
 
-app = FastAPI(title="WoW Version Tracker")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()  # runs when the server starts
+    yield  # Anything after yield runs when the server shuts down
+
+
+app = FastAPI(title="WoW Version Tracker", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
