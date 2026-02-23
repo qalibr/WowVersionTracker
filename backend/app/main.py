@@ -19,7 +19,6 @@ app.include_router(api_router, prefix="/api/v1")
 async def root():
     return {
         "message": "WoW Version Tracker API is running",
-        "docs": "Go to /docs to see the Swagger UI",
     }
 
 

@@ -23,7 +23,6 @@ class RibbitClient:
                 return self._parse_v2_response(text_data)
 
         except urllib.error.HTTPError as e:
-            # If CDN branch is currently offline
             if e.code != 404:
                 logger.error(
                     f"HTTP fetch failed for {self.product}: {e.code} {e.reason}"

@@ -14,7 +14,15 @@ export const getTocInterface = (versionName) => {
 };
 
 function App() {
-  const [selectedCards, setSelectedCards] = useState({});
+  const [selectedCards, setSelectedCards] = useState(() => {
+    try {
+      const saved = localStorage.getItem('selectedCards');
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.error("Failed to parse selectedCards from localStorage", error);
+      return {};
+    }
+  });
   const [wowProducts, setWowProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [globalRegion, setGlobalRegion] = useState('eu');
@@ -25,6 +33,14 @@ function App() {
       .catch(err => console.error("Failed to load products", err))
       .finally(() => setLoadingProducts(false));
   }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('selectedCards', JSON.stringify(selectedCards));
+    } catch (error) {
+      console.error("Failed to save selectedCards to localStorage", error);
+    }
+  }, [selectedCards]);
 
   const handleToggleCard = (product, region, versionName) => {
     const cardId = `${product}-${region}-${versionName}`;
