@@ -34,8 +34,10 @@ class WowVersion(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     product: str = Field(index=True)
+    region: str = Field(index=True)
     version_name: str
     build_id: str
+    build_config: str
     discovered_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 

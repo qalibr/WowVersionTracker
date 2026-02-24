@@ -1,0 +1,5 @@
+[
+  "tests/test_api.py::test_health_check",
+  "tests/test_api.py::test_mock_user_exists",
+  "tests/test_api.py::test_user_ui_selection"
+]
