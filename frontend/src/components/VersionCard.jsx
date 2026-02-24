@@ -27,7 +27,6 @@ function VersionCard({ product, selectedCards, onToggle, globalRegion }) {
             setLoading(false);
             return;
         }
-        // END MOCK DATA
 
         fetch(`/api/v1/versions/${product}`)
             .then(res => res.json())
@@ -51,20 +50,17 @@ function VersionCard({ product, selectedCards, onToggle, globalRegion }) {
     const regionHistory = data[displayRegion] || [];
     if (regionHistory.length === 0) return null;
 
-    // The first item is our current build
     const currentBuild = regionHistory[0];
     const mainCardId = `${product}-${displayRegion}-${currentBuild.version_name}`;
     const isMainSelected = !!selectedCards[mainCardId];
 
-    // Prepare history (index 1 and 2). If data doesn't exist yet, we pad it with nulls for placeholders.
     const historyDepth = 3;
     const historyList = [];
     for (let i = 1; i < historyDepth; i++) {
         historyList.push(regionHistory[i] || null);
     }
 
-    // NEW: Check if ANY of the history items are currently selected
-    const isAnyHistorySelected = historyList.some(build => 
+    const isAnyHistorySelected = historyList.some(build =>
         build ? !!selectedCards[`${product}-${displayRegion}-${build.version_name}`] : false
     );
 
@@ -107,14 +103,12 @@ function VersionCard({ product, selectedCards, onToggle, globalRegion }) {
                     </div>
                 </div>
 
-                <details className={`collapse collapse-arrow rounded-none rounded-b-xl border-t transition-colors ${
-                    isAnyHistorySelected 
-                        ? 'bg-primary/8 border-primary/30 text-primary' 
+                <details className={`collapse collapse-arrow rounded-none rounded-b-xl border-t transition-colors ${isAnyHistorySelected
+                        ? 'bg-primary/8 border-primary/30 text-primary'
                         : 'bg-base-300 border-base-content/10 text-base-content'
-                }`}>
-                    <summary className={`collapse-title min-h-0 py-2 text-xs font-semibold cursor-pointer transition-opacity ${
-                        isAnyHistorySelected ? 'opacity-100' : 'opacity-70 hover:opacity-100'
                     }`}>
+                    <summary className={`collapse-title min-h-0 py-2 text-xs font-semibold cursor-pointer transition-opacity ${isAnyHistorySelected ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+                        }`}>
                         {isAnyHistorySelected ? 'History Selected' : 'View Build History'}
                     </summary>
                     <div className="collapse-content text-xs pb-2 px-2 text-base-content">
