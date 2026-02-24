@@ -1,6 +1,9 @@
 # Python cache
-app/__pycache__/
+**/__pycache__/
+*.py[cod]
 
-# --- Python / Backend ---
 # Virtual environment
 venv/
+
+# Database
+*.db
