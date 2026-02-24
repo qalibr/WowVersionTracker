@@ -10,31 +10,25 @@ logger = logging.getLogger(__name__)
 @router.get("/versions/{product}")
 async def get_versions(product: str, db: Session = Depends(get_session)):
     """
-    Get the latest discovered version for each region of a given product.
+    Get the top 3 latest discovered versions for each region of a given product.
+    Returns a dictionary keyed by region, containing lists of versions.
     """
-    subquery = (
-        select(
-            WowVersion.region,
-            func.max(WowVersion.discovered_at).label("max_discovered_at"),
-        )
-        .where(WowVersion.product == product)
-        .group_by(WowVersion.region)
-        .subquery()
-    )
-
     statement = (
         select(WowVersion)
-        .join(
-            subquery,
-            (WowVersion.region == subquery.c.region)
-            & (WowVersion.discovered_at == subquery.c.max_discovered_at),
-        )
         .where(WowVersion.product == product)
-        .order_by(WowVersion.region)
+        .order_by(WowVersion.region, WowVersion.discovered_at.desc())
     )
+    all_versions = db.exec(statement).all()
 
-    versions = db.exec(statement).all()
-    return versions
+    grouped_versions = {}
+    for v in all_versions:
+        if v.region not in grouped_versions:
+            grouped_versions[v.region] = []
+
+        if len(grouped_versions[v.region]) < 3:
+            grouped_versions[v.region].append(v)
+
+    return grouped_versions
 
 
 @router.get("/products")
