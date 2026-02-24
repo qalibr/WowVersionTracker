@@ -63,6 +63,11 @@ function VersionCard({ product, selectedCards, onToggle, globalRegion }) {
         historyList.push(regionHistory[i] || null);
     }
 
+    // NEW: Check if ANY of the history items are currently selected
+    const isAnyHistorySelected = historyList.some(build => 
+        build ? !!selectedCards[`${product}-${displayRegion}-${build.version_name}`] : false
+    );
+
     return (
         <div className="flex flex-wrap gap-3 mb-4">
             <div className={`card bg-base-200 border-2 flex-grow min-w-[240px] transition-all flex flex-col ${isMainSelected ? 'border-primary bg-primary/5' : 'border-transparent'}`}>
@@ -102,11 +107,17 @@ function VersionCard({ product, selectedCards, onToggle, globalRegion }) {
                     </div>
                 </div>
 
-                <details className="collapse collapse-arrow bg-base-300 rounded-none rounded-b-2xl border-t border-base-content/10">
-                    <summary className="collapse-title min-h-0 py-2 text-xs font-semibold opacity-70 hover:opacity-100 transition-opacity cursor-pointer">
-                        View Build History
+                <details className={`collapse collapse-arrow rounded-none rounded-b-xl border-t transition-colors ${
+                    isAnyHistorySelected 
+                        ? 'bg-primary/8 border-primary/30 text-primary' 
+                        : 'bg-base-300 border-base-content/10 text-base-content'
+                }`}>
+                    <summary className={`collapse-title min-h-0 py-2 text-xs font-semibold cursor-pointer transition-opacity ${
+                        isAnyHistorySelected ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+                    }`}>
+                        {isAnyHistorySelected ? 'History Selected' : 'View Build History'}
                     </summary>
-                    <div className="collapse-content text-xs pb-2 px-2">
+                    <div className="collapse-content text-xs pb-2 px-2 text-base-content">
                         <ul className="space-y-1 mt-1">
                             {historyList.map((build, idx) => {
                                 if (!build) {
