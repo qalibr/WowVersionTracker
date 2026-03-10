@@ -143,7 +143,7 @@ async def github_callback(
         redirect_response = RedirectResponse(
             url=f"https://github.com/apps/{settings.github_app_slug}/installations/new"
         )
-        # We must re-attach the cookie so the session persists through the install flow
+        # Re-attach the cookie so the session persists through the installation
         redirect_response.set_cookie(
             key="access_token",
             value=f"Bearer {jwt_token}",
