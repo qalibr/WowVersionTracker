@@ -11,6 +11,7 @@ class User(SQLModel, table=True):
     username: str
     email: Optional[str] = None
     github_access_token: Optional[str] = None  # TODO encrypt this 
+    installation_id: Optional[int] = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     tracked_repos: List["TrackedRepo"] = Relationship(back_populates="user")

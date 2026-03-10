@@ -1,11 +1,13 @@
 import asyncio
 import logging
+import httpx
 
 from sqlmodel import Session, select
 
 from app.database import engine
 from app.ribbit import RibbitClient
-from app.models import WowVersion
+from app.models import WowVersion, User
+from app.github_auth import get_installation_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,42 @@ def _update_versions_in_db(db: Session, product: str, versions_data: list):
     db.commit()
 
 
+async def check_tracked_repos():
+    """
+    Iterates over users with an installation_id, gets an IAT, and checks their tracked repos.
+    """
+    with Session(engine) as session:
+        # Find users who have installed the GitHub App
+        statement = select(User).where(User.installation_id != None)
+        users = session.exec(statement).all()
+
+        for user in users:
+            try:
+                # 1. Get Installation Access Token (IAT)
+                token = await get_installation_access_token(user.installation_id)
+
+                # 2. Check each repo tracked by this user
+                for repo in user.tracked_repos:
+                    try:
+                        # Fetch raw content of the .toc file
+                        url = f"https://api.github.com/repos/{repo.repo_full_name}/contents/{repo.toc_file_path}"
+                        headers = {
+                            "Authorization": f"Bearer {token}",
+                            "Accept": "application/vnd.github.raw+json",
+                        }
+                        async with httpx.AsyncClient() as client:
+                            resp = await client.get(url, headers=headers)
+                            if resp.status_code == 200:
+                                content = resp.text
+                                # TODO: Parse 'Interface: 12345' from content and update DB
+                                logger.info(f"Fetched TOC for {repo.repo_full_name}: {len(content)} bytes")
+                            else:
+                                logger.warning(f"Failed to fetch {repo.repo_full_name}: {resp.status_code}")
+                    except Exception as e:
+                        logger.error(f"Error checking repo {repo.repo_full_name}: {e}")
+            except Exception as e:
+                logger.error(f"Error processing user {user.username} (install_id={user.installation_id}): {e}")
+
 async def periodic_version_check():
     """Periodically fetches versions for all known products and updates the DB."""
     logger.info("Starting periodic version check background task.")
@@ -64,6 +102,9 @@ async def periodic_version_check():
         with Session(engine) as session:
             for i, prod_name in enumerate(KNOWN_WOW_PRODUCTS):
                 _update_versions_in_db(session, prod_name, results[i])
+
+        # Also check user repositories
+        await check_tracked_repos()
 
         logger.info(f"Version check finished. Sleeping for {FETCH_INTERVAL_SECONDS} seconds.")
         await asyncio.sleep(FETCH_INTERVAL_SECONDS)

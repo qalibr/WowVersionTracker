@@ -1,17 +1,28 @@
+"""
+app/api.py: You'll update this to include the new auth router alongside your existing endpoints.
+"""
+
 import logging
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select, func
 from app.database import get_session
 from app.models import WowVersion
+from app.routers.auth import router as auth_router
+from app.routers.webhooks import router as webhooks_router
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+router.include_router(auth_router, prefix="/auth")
+router.include_router(webhooks_router, prefix="/webhooks")
+
+
 @router.get("/versions/{product}")
 async def get_versions(product: str, db: Session = Depends(get_session)):
     """
-    Get the top 3 latest discovered versions for each region of a given product.
-    Returns a dictionary keyed by region, containing lists of versions.
+    This returns a dictionary keyed by region, that contains lists of
+    versions. History will have to build over time, but it goes 3 deep.
     """
     statement = (
         select(WowVersion)
@@ -34,7 +45,7 @@ async def get_versions(product: str, db: Session = Depends(get_session)):
 @router.get("/products")
 async def get_wow_products(db: Session = Depends(get_session)):
     """
-    Get a list of all products that have at least one version in the database.
+    Gets a list of all products that have at least one version in the database.
     """
     statement = select(WowVersion.product).distinct()
     db_products = db.exec(statement).all()
