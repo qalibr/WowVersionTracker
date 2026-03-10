@@ -1,7 +1,3 @@
-"""
-app/api.py: You'll update this to include the new auth router alongside your existing endpoints.
-"""
-
 import logging
 
 from fastapi import APIRouter, Depends

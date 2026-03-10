@@ -73,6 +73,7 @@ async def check_tracked_repos():
                 for repo in user.tracked_repos:
                     try:
                         # Fetch raw content of the .toc file
+                        # TODO this annoys Vite reload
                         url = f"https://api.github.com/repos/{repo.repo_full_name}/contents/{repo.toc_file_path}"
                         headers = {
                             "Authorization": f"Bearer {token}",

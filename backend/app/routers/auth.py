@@ -17,28 +17,47 @@ logger = logging.getLogger(__name__)
 
 @router.get("/github/login")
 async def github_login():
-    github_auth_url = (
-        f"https://github.com/apps/{settings.github_app_slug}/installations/new"
+    return RedirectResponse(
+        f"https://github.com/login/oauth/authorize?client_id={settings.github_client_id.strip()}"
     )
-    return RedirectResponse(github_auth_url)
 
 
 @router.get("/github/callback")
 async def github_callback(
+    request: Request,
     db: Session = Depends(get_session),
     code: str = None,
     error: str = None,
     installation_id: int = None,
     setup_action: str = None,
 ):
-    if error or not code:
+    if error:
         return RedirectResponse(url=settings.frontend_url)
 
-    # Strip whitespace to prevent copy-paste errors from .env
-    client_id = settings.github_client_id.strip()
-    client_secret = settings.github_client_secret.strip()
+    # Handle Post-Installation: User installed app and was redirected back (No code, but has installation_id)
+    if not code and installation_id:
+        token_cookie = request.cookies.get("access_token")
+        if token_cookie:
+            token_str = token_cookie.replace("Bearer ", "")
+            try:
+                payload = jwt.decode(
+                    token_str, settings.jwt_secret, algorithms=["HS256"]
+                )
+                user_id = int(payload.get("sub"))
+                user = db.get(User, user_id)
+                if user:
+                    user.installation_id = installation_id
+                    db.add(user)
+                    db.commit()
+            except Exception as e:
+                logger.error(f"Failed to link installation: {e}")
+        return RedirectResponse(url=settings.frontend_url)
 
-    logger.info(f"Exchanging OAuth code. Client ID: {client_id}")
+    if not code:
+        return RedirectResponse(url=settings.frontend_url)
+
+    client_id = settings.github_client_id
+    client_secret = settings.github_client_secret
 
     # Exchange the temporary code for a real access token
     async with httpx.AsyncClient() as client:
@@ -55,9 +74,8 @@ async def github_callback(
             logger.error(
                 f"GitHub Token Exchange Failed ({token_res.status_code}): {token_res.text}"
             )
-            raise HTTPException(
-                status_code=400,
-                detail="Error 400: Failed to retrieve access token from GitHub",
+            return RedirectResponse(
+                url=f"{settings.frontend_url}?error=token_exchange_failed"
             )
 
         token_data = token_res.json()
@@ -65,8 +83,8 @@ async def github_callback(
 
         if not access_token:
             logger.error(f"GitHub Token Exchange Error: {token_data}")
-            raise HTTPException(
-                status_code=400, detail="Failed to retrieve access token from GitHub"
+            return RedirectResponse(
+                url=f"{settings.frontend_url}?error=no_access_token"
             )
 
         # Fetch the user's public profile from GitHub
@@ -74,6 +92,15 @@ async def github_callback(
             "https://api.github.com/user",
             headers={"Authorization": f"Bearer {access_token}"},
         )
+
+        if user_res.status_code != 200:
+            logger.error(
+                f"GitHub User Profile Fetch Failed ({user_res.status_code}): {user_res.text}"
+            )
+            return RedirectResponse(
+                url=f"{settings.frontend_url}?error=user_fetch_failed"
+            )
+
         gh_user = user_res.json()
 
     # Upsert the user
@@ -110,6 +137,23 @@ async def github_callback(
         max_age=60 * 60 * 24 * 7,
         path="/",
     )
+
+    # Check if the user has installed the app
+    if not db_user.installation_id and not installation_id:
+        redirect_response = RedirectResponse(
+            url=f"https://github.com/apps/{settings.github_app_slug}/installations/new"
+        )
+        # We must re-attach the cookie so the session persists through the install flow
+        redirect_response.set_cookie(
+            key="access_token",
+            value=f"Bearer {jwt_token}",
+            httponly=True,
+            samesite="lax",
+            max_age=60 * 60 * 24 * 7,
+            path="/",
+        )
+        return redirect_response
+
     return redirect_response
 
 

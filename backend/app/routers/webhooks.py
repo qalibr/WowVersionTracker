@@ -21,13 +21,16 @@ async def verify_signature(request: Request):
         raise HTTPException(status_code=403, detail="Missing signature header")
 
     body = await request.body()
-    
-    # Create local hash
-    local_signature = "sha256=" + hmac.new(
-        key=settings.github_webhook_secret.encode(),
-        msg=body,
-        digestmod=hashlib.sha256
-    ).hexdigest()
+
+    # Local hash
+    local_signature = (
+        "sha256="
+        + hmac.new(
+            key=settings.github_webhook_secret.encode(),
+            msg=body,
+            digestmod=hashlib.sha256,
+        ).hexdigest()
+    )
 
     if not hmac.compare_digest(local_signature, signature):
         raise HTTPException(status_code=403, detail="Invalid signature")
@@ -39,18 +42,18 @@ async def github_webhook(
     x_github_event: str = Header(alias="X-GitHub-Event"),
     db: Session = Depends(get_session),
 ):
-    # 1. Verify Signature
+    # verify
     await verify_signature(request)
 
     payload = await request.json()
     action = payload.get("action")
 
-    # 2. Handle Installation Events
+    # Handle Installation Events
     if x_github_event == "installation":
         if action == "deleted":
             installation_id = payload.get("installation", {}).get("id")
             logger.info(f"Installation {installation_id} deleted. Removing from DB.")
-            
+
             # Find user with this installation_id and clear it
             statement = select(User).where(User.installation_id == installation_id)
             user = db.exec(statement).first()
@@ -59,7 +62,7 @@ async def github_webhook(
                 db.add(user)
                 db.commit()
 
-    # 3. Handle Push Events (Sync logic)
+    # Handle Push Events
     elif x_github_event == "push":
         # TODO: Identify which repo was pushed to and trigger an immediate check
         repo_full_name = payload.get("repository", {}).get("full_name")

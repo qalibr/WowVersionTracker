@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import VersionCard from './components/VersionCard';
 
 export const getTocInterface = (versionName) => {
@@ -27,6 +27,7 @@ function App() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [globalRegion, setGlobalRegion] = useState('eu');
   const [user, setUser] = useState(null);
+  const authRedirectHandled = useRef(false);
 
   useEffect(() => {
     fetch('/api/v1/products')
@@ -41,13 +42,14 @@ function App() {
     const code = params.get('code');
     const installationId = params.get('installation_id');
 
-    if (code) {
-      // We've been redirected from GitHub install. The backend should have handled this,
-      // but as a fallback, we forward the params to the correct callback endpoint.
-      // This also clears the params from the URL bar for a cleaner UX.
+    if (code || installationId) {
+      if (authRedirectHandled.current) return;
+      authRedirectHandled.current = true;
+
+      // Fallback in case we are redirected from GitHub install and the backend
+      // didn't handle it properly.
       window.location.href = `/api/v1/auth/github/callback?${params.toString()}`;
     } else {
-      // Normal page load, check for an existing session
       fetch('/api/v1/auth/me', {
         credentials: 'include'
       })
@@ -81,8 +83,9 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/v1/auth/logout', { method: 'POST' });
+      await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
       setUser(null);
+      window.location.href = '/';
     } catch (error) {
       console.error("Failed to logout", error);
     }

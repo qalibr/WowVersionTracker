@@ -1,7 +1,3 @@
-"""
-app/config.py: A dedicated place to load environment variables using pydantic-settings. You'll need variables for GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, and your ENCRYPTION_KEY.
-"""
-
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
