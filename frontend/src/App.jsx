@@ -27,7 +27,8 @@ function App() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [globalRegion, setGlobalRegion] = useState('eu');
   const [user, setUser] = useState(null);
-  const authRedirectHandled = useRef(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const hasProcessedOAuth = useRef(false);
 
   useEffect(() => {
     fetch('/api/v1/products')
@@ -42,19 +43,22 @@ function App() {
     const code = params.get('code');
     const installationId = params.get('installation_id');
 
-    if (code || installationId) {
-      if (authRedirectHandled.current) return;
-      authRedirectHandled.current = true;
-
-      // Fallback in case we are redirected from GitHub install and the backend
-      // didn't handle it properly.
+    if ((code || installationId) && !hasProcessedOAuth.current) {
+      hasProcessedOAuth.current = true;
+      // Redirect to backend to process login/installation.
+      // The backend will set the cookie and redirect back to the frontend.
+      // On the next load, the 'else' block will run.
+      // isAuthLoading remains true during this.
       window.location.href = `/api/v1/auth/github/callback?${params.toString()}`;
-    } else {
+    } else if (!code && !installationId) {
+      // This is a normal page load or a redirect back from the backend.
+      // Check if we have a valid session cookie.
       fetch('/api/v1/auth/me', {
         credentials: 'include'
       })
         .then(res => (res.ok ? res.json() : null))
-        .then(userData => setUser(userData));
+        .then(userData => setUser(userData))
+        .finally(() => setIsAuthLoading(false)); // We're done checking auth.
     }
   }, []);
 
@@ -96,6 +100,15 @@ function App() {
     ? `## Interface: ${uniqueTocs.join(', ')}`
     : "## Interface: (Select versions below)";
 
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-base-100 gap-4">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+        <h2 className="text-xl font-bold opacity-50">Authenticating GitHub user...</h2>
+      </div>
+    );
+  }
+    
   return (
     <div className="container mx-auto max-w-5xl p-4 sm:p-8 min-h-screen">
       <header className="text-center mb-10">
@@ -122,7 +135,12 @@ function App() {
           )}
         </div>
 
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-3">WoW Version Tracker</h1>
+        {user ? (
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-3">WoW Version Tracker (Logged In)</h1>
+        ) : (
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-3">WoW Version Tracker</h1>
+        )}
+        {/*<h1 className="text-4xl md:text-5xl font-extrabold mb-3">WoW Version Tracker</h1>*/}
         <p className="text-base-content/70">Select multiple versions to generate your TOC Interface tags.</p>
 
         <div className="max-w-2xl mx-auto mt-8 flex flex-col items-center gap-4">
