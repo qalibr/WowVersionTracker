@@ -36,7 +36,7 @@ def generate_github_jwt() -> str:
     private_key = load_private_key()
 
     now = int(time.time())
-    payload = {"iat": now - 60, "exp": now + (10 * 60), "iss": settings.github_app_id}
+    payload = {"iat": now - 60, "exp": now + (9 * 60), "iss": settings.github_app_id}
 
     return jwt.encode(payload, private_key, algorithm="RS256")
 

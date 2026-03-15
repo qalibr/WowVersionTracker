@@ -96,16 +96,21 @@ async def periodic_version_check():
     """Periodically fetches versions for all known products and updates the DB."""
     logger.info("Starting periodic version check background task.")
     while True:
-        logger.info("Running scheduled version check...")
-        tasks = [asyncio.to_thread(RibbitClient(prod).fetch_data) for prod in KNOWN_WOW_PRODUCTS]
-        results = await asyncio.gather(*tasks)
+        try:
+            logger.info("Running scheduled version check...")
+            tasks = [asyncio.to_thread(RibbitClient(prod).fetch_data) for prod in KNOWN_WOW_PRODUCTS]
+            results = await asyncio.gather(*tasks)
 
-        with Session(engine) as session:
-            for i, prod_name in enumerate(KNOWN_WOW_PRODUCTS):
-                _update_versions_in_db(session, prod_name, results[i])
+            with Session(engine) as session:
+                for i, prod_name in enumerate(KNOWN_WOW_PRODUCTS):
+                    _update_versions_in_db(session, prod_name, results[i])
 
-        # Also check user repositories
-        await check_tracked_repos()
+            # Also check user repositories
+            await check_tracked_repos()
 
-        logger.info(f"Version check finished. Sleeping for {FETCH_INTERVAL_SECONDS} seconds.")
+            logger.info("Version check finished.")
+        except Exception as e:
+            logger.error(f"Unhandled exception in periodic_version_check: {e}", exc_info=True)
+
+        logger.info(f"Sleeping for {FETCH_INTERVAL_SECONDS} seconds before next check.")
         await asyncio.sleep(FETCH_INTERVAL_SECONDS)
